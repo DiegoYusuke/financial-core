@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Transação</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center h-screen">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-slate-200">
+        <h2 class="text-2xl font-bold mb-6 text-slate-800">Nova Transação</h2>
+
+        <form method="post" id="transacaoForm">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Data</label>
+                {{ form.data }}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Descrição</label>
+                {{ form.descricao }}
+            </div>
+
+            <div class="mb-4 flex gap-4">
+                <div class="w-1/2">
+                    <label class="block text-sm font-bold mb-2">Valor (R$)</label>
+                    {{ form.valor }}
+                </div>
+                <div class="w-1/2">
+                    <label class="block text-sm font-bold mb-2">Conta</label>
+                    {{ form.conta }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Categoria</label>
+                {{ form.categoria }} 
+                </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-bold mb-2">Subcategoria</label>
+                {{ form.subcategoria }}
+                </div>
+
+            <div class="flex justify-between">
+                <a href="{% url 'index' %}" class="text-slate-500 py-2 px-4">Cancelar</a>
+                <button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded hover:bg-green-700">
+                    Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

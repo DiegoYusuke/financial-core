@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Core</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 pb-20">
+
+    <div class="max-w-7xl mx-auto p-6"> 
+        
+        <header class="mb-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-slate-900">Financial Core</h1>
+            <div class="flex gap-2">
+                <a href="{% url 'planejamento' %}" class="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 shadow-md transition-colors">
+                    🎯 Planejamento
+                </a>
+                <a href="{% url 'nova_transacao' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow-md transition-colors">
+                    + Nova Transação
+                </a>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xs text-slate-500 uppercase tracking-wide font-bold">Saldo Atual</h2>
+                <p class="text-3xl font-bold {% if saldo_total >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    R$ {{ saldo_total|floatformat:2 }}
+                </p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xs text-slate-500 uppercase tracking-wide font-bold">Entradas</h2>
+                <p class="text-3xl font-bold text-blue-600">
+                    + R$ {{ receita|floatformat:2 }}
+                </p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xs text-slate-500 uppercase tracking-wide font-bold">Saídas</h2>
+                <p class="text-3xl font-bold text-red-500">
+                    - R$ {{ despesa|floatformat:2 }}
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-96">
+                <h3 class="font-bold text-lg mb-4 text-slate-700">Composição de Gastos</h3>
+                <div class="relative h-72">
+                    <canvas id="graficoPizza"></canvas>
+                </div>
+                {% if not grafico_data %}
+                    <p class="text-center text-slate-400 text-sm mt-4">Sem dados para exibir.</p>
+                {% endif %}
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-96">
+                <h3 class="font-bold text-lg mb-4 text-slate-700">Meta vs Realizado</h3>
+                <div class="relative h-72">
+                    <canvas id="graficoBarras"></canvas>
+                </div>
+                 {% if not bar_meta %}
+                    <p class="text-center text-slate-400 text-sm mt-4">Defina metas no Planejamento para comparar.</p>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+            <div class="p-4 border-b border-slate-100 bg-slate-50">
+                <h3 class="font-bold text-lg text-slate-700">Últimas Transações</h3>
+            </div>
+            
+            <table class="w-full text-left">
+                <thead class="bg-white text-slate-500 text-sm border-b border-slate-100">
+                    <tr>
+                        <th class="p-4">Data</th>
+                        <th class="p-4">Descrição</th>
+                        <th class="p-4">Categoria</th>
+                        <th class="p-4 text-right">Valor</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for t in transacoes %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 text-slate-600">{{ t.data|date:"d/m/Y" }}</td>
+                        <td class="p-4 font-medium text-slate-800">{{ t.descricao|default:"-" }}</td>
+                        <td class="p-4">
+                            <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs border border-slate-200">
+                                {% if t.subcategoria %}
+                                    {{ t.subcategoria.nome }}
+                                {% else %}
+                                    {{ t.subcategoria.categoria.nome|default:"Geral" }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="p-4 text-right font-mono font-medium {% if t.categoria.tipo == 'D' %}text-red-500{% elif t.categoria.tipo == 'R' %}text-green-600{% endif %}">
+                            R$ {{ t.valor }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-slate-400">
+                            Nenhuma transação registrada ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // --- GRÁFICO 1: PIZZA ---
+        const ctxPizza = document.getElementById('graficoPizza');
+        const labelsPizza = {{ grafico_labels|safe }};
+        const dataPizza = {{ grafico_data|safe }};
+
+        if (labelsPizza.length > 0) {
+            new Chart(ctxPizza, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsPizza,
+                    datasets: [{
+                        data: dataPizza,
+                        borderWidth: 0,
+                        backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'],
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+
+        // --- GRÁFICO 2: BARRAS (META vs REAL) ---
+        const ctxBarras = document.getElementById('graficoBarras');
+        const labelsBar = {{ bar_labels|safe }};
+        const dataMeta = {{ bar_meta|safe }}; // Azul
+        const dataReal = {{ bar_real|safe }}; // Vermelho/Cinza
+
+        if (labelsBar.length > 0) {
+            new Chart(ctxBarras, {
+                type: 'bar',
+                data: {
+                    labels: labelsBar,
+                    datasets: [
+                        {
+                            label: 'Planejado',
+                            data: dataMeta,
+                            backgroundColor: '#e2e8f0', // Cinza claro (fundo)
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: 'Gasto Real',
+                            data: dataReal,
+                            backgroundColor: '#3b82f6', // Azulão
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: false, grid: { display: false } }, // Barras lado a lado
+                        y: { beginAtZero: true, grid: { borderDash: [2, 4] } }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
